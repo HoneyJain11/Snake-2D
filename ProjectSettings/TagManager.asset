@@ -15,6 +15,7 @@ TagManager:
   - MassGainerFood
   - Shield
   - SpeedUp
+  - MassBurner
   layers:
   - Default
   - TransparentFX
