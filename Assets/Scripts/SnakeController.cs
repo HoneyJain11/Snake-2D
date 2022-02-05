@@ -20,13 +20,15 @@ public class SnakeController : MonoBehaviour
     public GameObject massGainerFood;
     public GameObject shield;
     public GameObject speedUp;
-    
+    public GameObject massBurner;
+    public GameObject WinPanel, DeathPanel;
 
-
+    public List<int> demo;
 
 
     private void Start()
     {
+        Time.timeScale = 1;
         segments = new List<Transform>();
         segments.Add(this.transform);
         OrthographicBound(_camera);
@@ -37,8 +39,24 @@ public class SnakeController : MonoBehaviour
         RefreshUI();
         GetMassGainerFoodAtRandomPlace();
         GetShieldAtRandomPlace();
-        GetSpeedUpAtRandomPlace();
+       // GetSpeedUpAtRandomPlace();
+        GetMassBurnerAtRandomPlace();
     }
+    //for MassBurner;
+    private void GetMassBurnerAtRandomPlace()
+    {
+        StartCoroutine(GenerateMassBurner());
+    }
+    IEnumerator GenerateMassBurner()
+    {
+        yield return new WaitForSeconds(UnityEngine.Random.Range(50,70));
+        massBurner.transform.position = new Vector3(
+        UnityEngine.Random.Range(left.transform.position.x + 1, right.transform.position.x - 1),
+        UnityEngine.Random.Range(top.transform.position.y - 1, bottom.transform.position.y + 1),
+        0.0f);
+        Instantiate(massBurner, massBurner.transform.position, Quaternion.identity);
+    }
+
     //for SpeedUp;
     private void GetSpeedUpAtRandomPlace()
     {
@@ -83,7 +101,7 @@ public class SnakeController : MonoBehaviour
 
     IEnumerator GenerateMassFood()
     {
-        yield return new WaitForSeconds(UnityEngine.Random.Range(10,40));
+        yield return new WaitForSeconds(UnityEngine.Random.Range(30,50));
 
         massGainerFood.transform.position = new Vector3(
          UnityEngine.Random.Range(left.transform.position.x + 1, right.transform.position.x - 1),
@@ -142,9 +160,6 @@ public class SnakeController : MonoBehaviour
         Mathf.Round(this.transform.position.y + move.y), 0.0f);
     }
 
-
-
-
     private void OnTriggerEnter2D(Collider2D collision)
     {
         //Debug.Log("OnTrigger x= " + this.transform.position.x.ToString());
@@ -167,7 +182,11 @@ public class SnakeController : MonoBehaviour
         if (collision.CompareTag("Obstacle"))
         {
             Debug.Log("Obstacle hit");
-            Restart();
+
+            Time.timeScale = 0;
+            DeathPanel.SetActive(true);
+
+           
         }
         //for 2xScore;
         if (collision.CompareTag("MassGainerFood"))
@@ -185,7 +204,8 @@ public class SnakeController : MonoBehaviour
             Debug.Log("ShieldCollided");
             Destroy(collision.gameObject);
             StartCoroutine(Wait());
-         }
+            
+        }
         //for speedup;
         if (collision.CompareTag("SpeedUp"))
         {
@@ -193,7 +213,23 @@ public class SnakeController : MonoBehaviour
             Destroy(collision.gameObject);
             //StartCoroutine(Wait());
         }
+        //for MassBurner;
+        if (collision.CompareTag("MassBurner"))
+        {
+            Destroy(collision.gameObject);
+            if(segments.Count>1)
+            { 
+                Destroy(segments[segments.Count - 1].gameObject);
+                segments.RemoveAt(segments.Count - 1);
 
+                Debug.Log("Count of segment is in MassBurner" + segments.Count);
+                IncreaseScore(-10);
+                RefreshUI();
+                StartCoroutine(GenerateMassBurner());
+            }
+            
+            
+        }
 
     }
 
@@ -202,14 +238,14 @@ public class SnakeController : MonoBehaviour
         SegmentCollisionSwitch(true);
         yield return new WaitForSeconds(15);
         SegmentCollisionSwitch(false);
-        GenerateShield();
+        StartCoroutine(GenerateShield());
     }
 
     private void SegmentCollisionSwitch(bool flag)
     {
         for (int i = 1; i < segments.Count; i++)
         {
-            Physics2D.IgnoreCollision(segments[i].GetComponent<Collider2D>(), GetComponent<Collider2D>(), flag);
+            Physics2D.IgnoreCollision(segments[i].GetComponent<Collider2D>(), this.GetComponent<Collider2D>(), flag);
             
         }
     }
@@ -225,8 +261,9 @@ public class SnakeController : MonoBehaviour
         scoreText.text = "Score: " + score;
     }
 
-    private void Restart()
+    public void Restart()
     {
+        Time.timeScale = 1;
         for (int i = 1;i < segments.Count; i++)
         {
             Destroy(segments[i].gameObject);
@@ -277,9 +314,14 @@ public class SnakeController : MonoBehaviour
 
     private void Grow()
     {
-        Transform newSnakeSegment = Instantiate(this.snakeSegmentPrefab);
-        newSnakeSegment.position = segments[segments.Count - 1].position;
-        segments.Add(newSnakeSegment);
+      
+        {
+            Debug.Log("Count of segment is in grow" + segments.Count );
+            Transform newSnakeSegment = Instantiate(this.snakeSegmentPrefab);
+            newSnakeSegment.position = segments[segments.Count - 1].position;
+            segments.Add(newSnakeSegment);
+        }
+        
     }
 
     private void OrthographicBound(Camera _camera)
@@ -288,10 +330,10 @@ public class SnakeController : MonoBehaviour
         float cameraHeight = _camera.orthographicSize * 2;
         Bounds bounds = new Bounds(_camera.transform.position, new Vector3(cameraHeight * screenAspect, cameraHeight, 0));
 
-        top.transform.position = new Vector3(0, bounds.max.y, 0);
-        bottom.transform.position = new Vector3(0, bounds.min.y, 0);
-        left.transform.position = new Vector3(bounds.min.x, 0, 0);
-        right.transform.position = new Vector3(bounds.max.x, 0, 0);
+        top.transform.position = new Vector3(0, ((int)bounds.max.y), 0);
+        bottom.transform.position = new Vector3(0, ((int)bounds.min.y), 0);
+        left.transform.position = new Vector3(((int)bounds.min.x), 0, 0);
+        right.transform.position = new Vector3(((int)bounds.max.x), 0, 0);
     }
 
 }
